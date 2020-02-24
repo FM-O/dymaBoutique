@@ -1,56 +1,21 @@
 import Vue from 'vue'
 import App from './App.vue'
+import * as Filters from './utils/filters';
+import router from './router';
+import axios from 'axios';
 
 Vue.config.productionTip = false
+axios.defaults.baseURL = 'https://dyma-formation.firebaseio.com/';
+Vue.prototype.$http = axios;
+
+Object.keys(Filters).forEach((f) => {
+  Vue.filter(f, Filters[f]);
+});
 
 export const eventBus = new Vue({
   data: {
-    products: [
-      {
-        id: '1',
-        img: 'https://www.apple.com/v/macbook-pro-16/a/images/overview/keyboard_hero__dlk5v7utj6ky_large.jpg',
-        title: 'MacBook',
-        description: 'Le nouveau MacBook Pro intègre un sublime écran Retina de 16 pouces – le plus grand écran Retina jamais vu sur un portable Mac. Avec une luminance de 500 nits, cet écran affiche des zones claires spectaculaires et des blancs éclatants, et il garantit des noirs profonds grâce à un photo‑alignement précis des molécules de cristaux liquides. La large gamme de couleurs P3 offre quant à elle des photos et des vidéos d’une qualité et d’un réalisme époustouflants. Où que vous soyez, votre travail apparaîtra sous son meilleur jour.',
-        price: 1500
-      },
-      {
-        id: '2',
-        img: 'https://www.apple.com/v/macbook-pro-16/a/images/overview/keyboard_hero__dlk5v7utj6ky_large.jpg',
-        title: 'MacBook',
-        description: 'Le nouveau MacBook Pro intègre un sublime écran Retina de 16 pouces – le plus grand écran Retina jamais vu sur un portable Mac. Avec une luminance de 500 nits, cet écran affiche des zones claires spectaculaires et des blancs éclatants, et il garantit des noirs profonds grâce à un photo‑alignement précis des molécules de cristaux liquides. La large gamme de couleurs P3 offre quant à elle des photos et des vidéos d’une qualité et d’un réalisme époustouflants. Où que vous soyez, votre travail apparaîtra sous son meilleur jour.',
-        price: 2700
-      },
-      {
-        id: '3',
-        img: 'https://www.apple.com/v/macbook-pro-16/a/images/overview/keyboard_hero__dlk5v7utj6ky_large.jpg',
-        title: 'MacBook',
-        description: 'Le nouveau MacBook Pro intègre un sublime écran Retina de 16 pouces – le plus grand écran Retina jamais vu sur un portable Mac. Avec une luminance de 500 nits, cet écran affiche des zones claires spectaculaires et des blancs éclatants, et il garantit des noirs profonds grâce à un photo‑alignement précis des molécules de cristaux liquides. La large gamme de couleurs P3 offre quant à elle des photos et des vidéos d’une qualité et d’un réalisme époustouflants. Où que vous soyez, votre travail apparaîtra sous son meilleur jour.',
-        price: 3500
-      },
-      {
-        id: '4',
-        img: 'https://www.apple.com/v/macbook-pro-16/a/images/overview/keyboard_hero__dlk5v7utj6ky_large.jpg',
-        title: 'MacBook',
-        description: 'Le nouveau MacBook Pro intègre un sublime écran Retina de 16 pouces – le plus grand écran Retina jamais vu sur un portable Mac. Avec une luminance de 500 nits, cet écran affiche des zones claires spectaculaires et des blancs éclatants, et il garantit des noirs profonds grâce à un photo‑alignement précis des molécules de cristaux liquides. La large gamme de couleurs P3 offre quant à elle des photos et des vidéos d’une qualité et d’un réalisme époustouflants. Où que vous soyez, votre travail apparaîtra sous son meilleur jour.',
-        price: 4000
-      },
-      {
-        id: '5',
-        img: 'https://www.apple.com/v/macbook-pro-16/a/images/overview/keyboard_hero__dlk5v7utj6ky_large.jpg',
-        title: 'MacBook',
-        description: 'Le nouveau MacBook Pro intègre un sublime écran Retina de 16 pouces – le plus grand écran Retina jamais vu sur un portable Mac. Avec une luminance de 500 nits, cet écran affiche des zones claires spectaculaires et des blancs éclatants, et il garantit des noirs profonds grâce à un photo‑alignement précis des molécules de cristaux liquides. La large gamme de couleurs P3 offre quant à elle des photos et des vidéos d’une qualité et d’un réalisme époustouflants. Où que vous soyez, votre travail apparaîtra sous son meilleur jour.',
-        price: 600
-      },
-      {
-        id: '6',
-        img: 'https://www.apple.com/v/macbook-pro-16/a/images/overview/keyboard_hero__dlk5v7utj6ky_large.jpg',
-        title: 'MacBook',
-        description: 'Le nouveau MacBook Pro intègre un sublime écran Retina de 16 pouces – le plus grand écran Retina jamais vu sur un portable Mac. Avec une luminance de 500 nits, cet écran affiche des zones claires spectaculaires et des blancs éclatants, et il garantit des noirs profonds grâce à un photo‑alignement précis des molécules de cristaux liquides. La large gamme de couleurs P3 offre quant à elle des photos et des vidéos d’une qualité et d’un réalisme époustouflants. Où que vous soyez, votre travail apparaîtra sous son meilleur jour.',
-        price: 1000
-      }
-    ],
-    cart: [],
-    page: 'Admin'
+    products: [],
+    cart: []
   },
   methods: {
     addProductToCart(product) {
@@ -63,17 +28,31 @@ export const eventBus = new Vue({
       this.cart = this.cart.slice().filter(i => i.id !== item.id);
       this.$emit('update:cart', this.cart);
     },
-    changePage(page) {
-      this.page = page;
-      this.$emit('update:page', this.page);
-    },
     addProduct(product) {
-      this.products = [ ...this.products, { ...product, id: this.products.length + 1 + '' } ];
+      this.$http.post('products.json', product)
+        .then(() => {
+          this.products = [ ...this.products, { ...product, id: this.products.length + 1 + '' } ];
+          this.$emit('update:products', this.products);
+        });
+    },
+    addProducts(products) {
+      this.products = products;
       this.$emit('update:products', this.products);
+    },
+    initProducts() {
+      this.$http.get('products.json')
+        .then(response => {
+          const data = response.data;
+          this.addProducts(Object.keys(data).map(key => data[key]));
+        });
     }
+  },
+  created() {
+    this.initProducts();
   }
 });
 
 new Vue({
+  router,
   render: h => h(App),
 }).$mount('#app')
